@@ -8,7 +8,7 @@ Author: Shanshan Zhu(zhushanshan0717@gmail.com)
 
 For inquiries, please contact the author.
 """
-
+# 导入相应模块
 from psychopy import visual, core, event, data, gui
 from psychopy.hardware import keyboard
 import numpy as np
@@ -20,7 +20,7 @@ import random  # Ensure random module is imported
 from psychopy.iohub import launchHubServer
 import matplotlib.pyplot as plt
 
-#——————————————————————————————————————————#
+#————————————————记录被试信息———————————————#
 # Fill the information
 expInfo = {'测试时间': data.getDateStr(),
            '受试者编号': '000',
@@ -32,7 +32,7 @@ dlg = gui.DlgFromDict(dictionary=expInfo,
 if dlg.OK == False:
     core.quit()
 
-# Create experiment window
+#————————————————创建实验窗口———————————————#
 win = visual.Window(size=[1920, 1080],
                     allowGUI=True,
                     monitor='testMonitor',
@@ -42,11 +42,11 @@ win = visual.Window(size=[1920, 1080],
 win.setMouseVisible(False)
 monitor = Monitor(name='testMonitor')
 
+#————————————————创建默认键盘对象，用于检测按键事件———————————————#
 # Create a default keyboard (e.g. to check for escape)
 defaultKeyboard = keyboard.Keyboard()
 
-#—————————————————————# task1 Introduction #—————————————————————————#
-# Create Data
+#————————————————创建实验数据文件夹———————————————#
 fileName = f"data/Exp1_task1_{expInfo['受试者编号']}" + '.csv'
 os.makedirs(os.path.dirname(fileName), exist_ok=True)  # Ensure directory exists
 dataFile = open(fileName, 'w')
@@ -54,254 +54,203 @@ dataFile.write('fixation_onset,fixation_offset,cue_onset,cue_offset,target_onset
 dataFile.write('condition,prior,rt,response,correct,orientation,stage,keypress,')
 dataFile.write('refreshrate,time,age,sex,subj_index,block_index,subj_idx,block\n')
 
-#——————————————————————# Task-study stage #————————————————————————#
 #——————————————————————# 实验前的指导语 #————————————————————————#
 
 stimuli = pd.read_csv('demo_stimuli2.csv')
 
-# 设置开始指导语前新增实验总指导语
-# 实验总指导语
-instruction = visual.TextStim(win,
-                    name='text',
-                    text='欢迎参加本实验！\n\n'
-                    '本实验共分为两个阶段：\n\n'
-                    '第一阶段需要您学习无意义的英文单词与特定标签的匹配，\n'
-                    '例如"REUJZ = self"。\n\n'
-                    '学习完成后将进入第二阶段测试，\n'
-                    '测试阶段正确率需达到90%以上才能进入后续fMRI实验。\n\n'
-                    '如果已理解实验要求，请按‘→’键继续\n'
-                    '若仍有疑问，请按‘←’键联系主试',
-                    font='Arial Unicode MS',
-                    alignText='center',
-                    height= 1.2,
-                    units='deg',
-                    color='white',
-                    pos=[0, 0])
-end = False
-
-while end == False:
-    show_instruction(win=win,monitor=monitor,expInfo=expInfo,exp=1,task=1 ,start=True)
-    event.clearEvents()
-    breakthisloop = False
-    while True:
-        if breakthisloop:
-            # Break out of the main loop if the flag is set
-            break
-        instruction.draw()
-        win.flip()
-        # Check for key presses ('left' or 'right')
-        for key in event.getKeys(keyList=['left', 'right']):
-            if key == 'left':
-                # If 'left' is pressed, do not end the practice
-                end = False
-                breakthisloop = True
-            elif key == 'right':
-                end = True
-                breakthisloop = True
-        if breakthisloop:
-            break
-    # If a key was pressed, break out of the main loop
-    if end:
-        break
-
-# 显示并等待响应
-purpose_text.draw()
-win.flip()
-
-# 设置有效按键
-valid_keys = ['right', 'left']
-key_resp = event.waitKeys(keyList=valid_keys)
-
-# 处理按键响应
-if 'left' in key_resp:
-    # 显示联系主试提示
-    contact_text = visual.TextStim(win,
-        text='请立即联系主试人员\n\n（按任意键退出）',
-        font='Arial Unicode MS',
-        alignText='center',
-        height= 1.2,
-        units='deg',
-        color='white',
-        pos=[0, 0])
-    contact_text.draw()
+#————————————————设置实验开始前的指导语——————————————————#
+def display_instruction(text):
+    instruction = visual.TextStim(win, 
+                                text=text, 
+                                font='Arial Unicode MS', 
+                                pos=(0, 0), 
+                                height=0.8, 
+                                color='white', 
+                                wrapWidth=30)
+    instruction.draw()
     win.flip()
-    event.waitKeys()  # 等待任意键
-    win.close()
-    core.quit()
-    
-# 设置开始指导语
-instructions_text = visual.TextStim(win, 
-    text=f'接下来将进入学习阶段\n\n（按空格键继续）',
-    languageStyle= 'RTL',
-    font='Arial Unicode MS',
-    alignText='center',
-    height = 1.2, 
-    units = 'deg',
-    depth=0.0,
-    color = 'white',
-    pos = [0, 0])
+    # Wait for space key to continue
+    keys = event.waitKeys(keyList=['space'])
+    if 'space' in keys:
+        return
 
-# 显示指导语，等待按空格键继续
-instructions_text.draw()
+# Page 1: Introduction Text
+intro_text1 = """欢迎参加本实验！\n\n
+本实验共分为两个阶段：\n\n
+第一阶段需要您学习无意义的英文单词与特定标签的匹配，\n
+例如"REUJZ"代表"self"。\n\n
+学习完成后将进入第二阶段测试，\n
+测试阶段正确率需达到90%以上才能进入后续fMRI实验。\n\n
+如果已清楚本实验要求\n\n
+<请按空格键继续>"""
+display_instruction(intro_text1)
+
+# Page 2: Introduction Text
+intro_text2 = """+\n\n\n
+屏幕中心会出现一个注视点,\n
+您需要注意力保持在注视点上\n
+接下来请将右手食指放在“←”键上,\n
+手中指放在“→”键上,\n
+左手放在空格键上以便接下来进行反应\n\n
+<请按空格键继续>"""
+
+display_instruction(intro_text2) 
+
+# Page 3: Introduction Text
+intro_text3 = """请将右手食指放在“ ← ” 上\,n
+右手中指放在 “ → ” 上,\n
+左手放在空格键上以便接下来进行反应,\n\n
+<请按空格键继续>"""
+
+display_instruction(intro_text3)
+
+# Page 4: Introduction Text
+intro_text4 = """第一阶段为学习阶段,\n
+您需要学习无意义的英文单词和标签之间的联结,\n
+进入实验后，您的鼠标就会隐藏,\n\n
+<请按空格键继续>"""
+
+display_instruction(intro_text4)
+
+# Page 5: Introduction Text
+intro_text5 = """在学习阶段,\n
+屏幕中央会出现一个无意义的英文单词（在后续的实验中统称为非词）,\n
+您需要记住该非词与标签（Self、Other）之间的联结,\n
+Self指代自己，Other指代他人，\n\n
+如果已理解实验要求，请按‘ → ’键继续，
+若仍有疑问，请按‘ ←’ 键联系主试"""
+
+display_instruction(intro_text5)
+
+# 显示说明
+instruction_text = visual.TextStim(win, text=intro_text5, pos=(0, 0), color="white", font='Arial Unicode MS', height=0.8, wrapWidth=30)
+instruction_text.draw()
 win.flip()
-event.waitKeys(keyList=["space"])
+#———————————————————# 行为实验阶段 #—————————————————————#
 
-#——————————————————————# 实验学习阶段 #————————————————————————#
+# 等待被试按键
+keys = event.waitKeys(keyList=['left', 'right'])
 
-# 将学习阶段封装成函数
-def run_learning_phase():
-    for index, row in stimuli.iterrows():
-        # 创建刺激文本
-        stim_display = visual.TextStim(win,
-            text = f"{row['nonwords']} = {row['label']}",
-            height = 1.2, 
-            units = 'deg',
-            font='Arial Unicode MS',
-            color = 'white',
-            depth=0.0,
-            alignText='center',
-            pos = [0,0])
-        
-        # 显示刺激
-        stim_display.draw()
-        win.flip()
-        
-        # 记录按键响应
-        event.waitKeys(keyList=["space"])  # 仅响应空格键
-        
-        # 在每次刺激后等待至少1秒
-        core.wait(1.0)
-
-# 初始学习阶段
-run_learning_phase()
-
-# 添加重新学习选择提示
-retry = True
-while retry:
-    # 创建提示文本
-    retry_text = visual.TextStim(win,
-        text='如果您没有记住所有非词与标签的对应关系\n请按 R 键 重新学习\n\n如果已记住，请按 C 键 对所学的非词进行回忆',
-        font='Arial Unicode MS',
-        alignText='center',
-        height=1.2,
-        units='deg',
-        color='white',
-        wrapWidth=25,
-        pos=[0,0])
-    
-    # 显示并等待响应
-    retry_text.draw()
+if 'right' in keys:
+    # 显示进入学习阶段的指导语
+    learning_text = visual.TextStim(win, 
+                                    text="接下来将进入学习阶段，您一共需要学习20个非词与标签之间的联结", 
+                                    wrapWidth=30, 
+                                    color="white", 
+                                    font='Arial Unicode MS', 
+                                    pos=(0, 0), 
+                                    height=0.8)
+    learning_text.draw()
     win.flip()
-    keys = event.waitKeys(keyList=['r', 'c'])
-    breakthisloop = False
-    while True:
-        if breakthisloop:
-            # Break out of the main loop if the flag is set
-            break
-        # Check for key presses ('r' or 'c')
-        for key in event.getKeys(keyList=['r', 'c']):
-            if key == 'r':
-                # If 'left' is pressed, do not end the practice
-                retry = True
-                run_learning_phase() 
-                breakthisloop = True
-            elif key == 'c':
-                retry = False
-                breakthisloop = True
-        if breakthisloop:
-            break
+    # 进入学习阶段的指导语呈现2s
+    core.wait(2)  
 
-# 将测试阶段封装成函数
-def run_testing_phase(stimuli_to_test):
-    wrong_items = []  # 记录答错的条目
-    random.shuffle(stimuli_to_test)  # 随机打乱顺序
-    
-    for index, row in stimuli_to_test.iterrows():
-        # 创建刺激文本（只显示非词）
-        test_stim = visual.TextStim(win,
-            text = f"{row['nonwords']}",
-            height = 1.5, 
-            units = 'deg',
-            font='Arial Unicode MS',
-            color = 'white',
-            alignText='center',
-            pos = [0,0])
-        
-        # 创建反应提示
-        prompt = visual.TextStim(win,
-            text = "左键 = self\n右键 = other",
-            height = 0.8,
-            pos = (0, -5),
-            color = 'white')
-        
-        # 显示刺激和提示
-        test_stim.draw()
-        prompt.draw()
+    # 读取刺激材料
+    stimuli_df = pd.read_csv('demo_stimuli2.csv')
+
+    # 学习阶段：呈现非词和标签的对应关系
+    for index, row in stimuli_df.iterrows():
+        nonword = row['nonwords']
+        label = row['label']
+        display_text = f"{nonword} = {label}"
+        stimulus_text = visual.TextStim(win, 
+                                        text=display_text, 
+                                        wrapWidth=30, 
+                                        color="white", 
+                                        pos=(0, 0), 
+                                        height=0.8)
+        stimulus_text.draw()
         win.flip()
+        # 每个非词刺激呈现2s
+        core.wait(2)  
+
+        # 进入测试阶段
+        test_instr = """接下来我们将对刚才学习的非词和标签联结进行测试,\n
+        在这一测试中，屏幕中央会呈现一个非词，您需要判断该非词属于self还是other,\n
+        按左键‘ ←’ 代表self（自己），\n
+        按右键‘ → ’代表other（他人），\n
+        如果您已经准备好了，\n
+        请按右键‘ → ’开始正式测试，\n
+        如果您想再学习一遍非词，请按左键‘ ← ’"""
+
+        # 呈现测试阶段指导语
+        test_instr_text = visual.TextStim(win, 
+            text=test_instr, 
+            wrapWidth=30, 
+            color="white",
+            font='Arial Unicode MS',
+            pos=(0, 0),  
+            height=0.8)    
+
+        # 显示测试阶段的指导语
+        test_instr_text.draw()
+        win.flip()
+
+        # 等待用户按键
+        keys = event.waitKeys(keyList=['left', 'right'])
         
-        # 记录反应时间和按键
-        timer = core.Clock()
-        keys = event.waitKeys(keyList=['left', 'right'], timeStamped=timer)
-        response, rt = keys[0]
+        # 创建刺激元素
+        word_stim = visual.TextStim(win, text='', height=0.1, pos=(0, 0.2))
+        left_option = visual.TextStim(win, text='self', pos=(-0.3, -0.2))
+        right_option = visual.TextStim(win, text='other', pos=(0.3, -0.2))
+        feedback = visual.TextStim(win, text='', pos=(0, -0.4), color='yellow')
         
-        # 判断正确性
-        correct = (response == 'left' and row['label'] == 'self') or \
-                  (response == 'right' and row['label'] == 'other')
-        
-        # 错误反馈
-        if not correct:
-            feedback = visual.TextStim(win,
-                text = f"正确对应：{row['nonwords']} = {row['label']}",
-                color = 'red',
-                height = 1.2)
+        # 定义测试阶段的函数
+        def run_trial(word, correct_answer):
+            word_stim.text = word
+            while True:
+                # 绘制所有刺激
+                word_stim.draw()
+                left_option.draw()
+                right_option.draw()
+                win.flip()
+                
+                # 等待被试反应（只接受左右方向键）
+                keys = event.waitKeys(keyList=['left', 'right'])
+                
+                # 获取被试反应
+                response = keys[0]
+                
+                # 判断正确性并设置反馈
+                if response == correct_answer:
+                    feedback.text = "Correct!"
+                    feedback.color = 'green'
+                    correct = True
+                else:
+                    feedback.text = "Wrong!"
+                    feedback.color = 'red'
+                    correct = False
+                
+                # 显示反馈
+                feedback.draw()
+                win.flip()
+                core.wait(1)  # 显示反馈1秒
+                
+                return correct
+
+        # 主试次循环
+        while True:
+            errors = []
+            for index, row in data.iterrows():
+                word = row['nonwords']
+                correct_answer = 'left' if row['label'] == 'self' else 'right'
+                
+                # 等待用户按键
+                keys = event.waitKeys(keyList=['left', 'right'])
+                
+                if 'right' in keys:
+                    correct = run_trial(word, correct_answer)
+                    if not correct:
+                        errors.append(row)
+                elif 'left' in keys:
+                    continue  # 重新进入学习阶段
             
-            feedback.draw()
-            win.flip()
-            core.wait(1.5)  # 显示反馈1.5秒
-            wrong_items.append({'stimulus': row['nonwords'], 'response': response, 'correct_answer': row['label'], 'rt': rt})  # 记录更多反馈信息
-    
-    return pd.DataFrame(wrong_items)  # 返回错误条目
-
-# 主学习-测试循环
-while True:
-    # 初始学习阶段
-    run_learning_phase()
-    
-    # 首次测试所有项目
-    wrong_items = run_testing_phase(stimuli)
-    
-    # 如果没有错误，退出循环
-    if wrong_items.empty:
-        break
-    
-    # 错误重学机制
-    retry_text = visual.TextStim(win,
-        text=f'您有{len(wrong_items)}个条目需要重新学习\n\n按空格键开始针对性练习',
-        height=1.2,
-        color='white')
-    
-    retry_text.draw()
-    win.flip()
-    event.waitKeys(keyList=['space'])
-    
-    # 针对错误项再次学习
-    run_learning_phase(pd.DataFrame(wrong_items))
-
-# 最终通过提示
-transition_text = visual.TextStim(win,
-    text='恭喜您已掌握所有非词！\n\n接下来将进入测试阶段\n\n（按空格键继续）',
-    height=1.2,
-    color='white')
-
-transition_text.draw()
-win.flip()
-event.waitKeys(keyList=['space'])
-
-#——————————————————————# 实验测试阶段 #————————————————————————#
-
-#——————————————————————# 实验结束 #————————————————————————#
-# 确保所有数据保存
-dataFile.close()
+            # 如果没有错误，结束循环
+            if not errors:
+                break
+            
+            # 否则，重新测试错误的单词
+            data = pd.DataFrame(errors)
 
 # 关闭窗口
 win.close()
