@@ -18,7 +18,7 @@ def generate_noise(image_width, image_height, block_size=10):
     for y in range(0, image_height, block_size):
         for x in range(0, image_width, block_size):
             # 随机生成噪声块的亮度（高斯分布，均值128，标准差50）
-            brightness = random.gauss(128, 50)
+            brightness = random.gauss(100, 30)
             brightness = np.clip(brightness, 0, 255)  # 限制亮度范围在0-255之间
             noise_image[y:y+block_size, x:x+block_size] = [brightness, brightness, brightness]
     return noise_image
