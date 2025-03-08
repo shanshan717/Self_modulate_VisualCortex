@@ -22,34 +22,32 @@ dlg = gui.DlgFromDict(dictionary=expInfo,
 if dlg.OK == False:
     core.quit()
     
-#————————————————创建实验数据文件夹———————————————#
-fileName = f"data/Exp1_task1_{expInfo['受试者编号']}" + '.csv'
-# 确保文件夹存在
-os.makedirs(os.path.dirname(fileName), exist_ok=True)  
-dataFile = open(fileName, 'w')
-# 将需要记录的数据写入csv，作为列名
-dataFile.write('fixation_onset,fixation_offset,stim_onset,stim_offset,ITI_onset,ITI_offset,'
-                'condition,nonword,rt,response,stage,correct,'
-                'frame_rate,date,age,gender,subject_id,block,subject_number,block_index\n')
- 
 #————————————————创建实验窗口———————————————#
 win = visual.Window(size=[1920, 1080],
                     allowGUI=True,
                     monitor='testMonitor',
                     units='deg',
                     fullscr=False,
-                    color='grey',
-                    waitBlanking=True,
-                    checkTiming=True)
+                    color='grey')
+
 win.setMouseVisible(False)
 monitor = Monitor(name='testMonitor')
 
-# 在实验开始前添加默认帧率
-for _ in range(60): 
-    win.flip()
+# create a default keyboard (e.g. to check for escape)
+defaultKeyboard = keyboard.Keyboard(backend='iohub')
+
+#————————————————创建实验数据文件夹———————————————#
+fileName = f"data/Exp1_task1_{expInfo['受试者编号']}" + '.csv'
+# 确保文件夹存在
+os.makedirs(os.path.dirname(fileName), exist_ok=True)  
+dataFile = open(fileName, 'w')
+# 将需要记录的数据写入csv
+dataFile.write('subject_id,age,gender,block,stage,fixation_onset,fixation_offset,'
+                'stim_onset,stim_offset,ITI_onset,ITI_offset,'
+                'condition,nonword,subject_response,true_response,correct,rt,'
+                'frame_rate,date,\n')
 
 #————————————————实验前：指导语———————————————#
-
 def display_instruction(text, valid_keys=None):
     instruction = visual.TextStim(win, 
                                 text=text, 
@@ -132,7 +130,7 @@ if result == "continue":
         
         for file in file_list:
             if file.lower().endswith(valid_extensions):
-                nonword = os.path.splitext(file)[0]  # 去除扩展名
+                nonword = os.path.splitext(file)[0]  
                 if len(nonword) >= 3:
                     third_char = nonword[2].upper()
                     if third_char in ('U', 'N'):
@@ -177,7 +175,7 @@ if result == "continue":
     # 创建注视点
     fixation_outer = visual.Circle(
     win,
-    radius=0.10,  # 直径0.3度换算为半径，0，15
+    radius=0.10, 
     edges=32,
     lineColor='black',
     fillColor=None,
@@ -186,7 +184,7 @@ if result == "continue":
     
     fixation_inner = visual.Circle(
     win,
-    radius=0.025,  # 直径0.15度换算为半径，0.075
+    radius=0.025,  
     edges=32,
     fillColor='black',
     lineColor='black'
@@ -196,16 +194,15 @@ if result == "continue":
     stim_image = visual.ImageStim(
     win,
     image=None,
-    pos=(0, 1),
-    size=(15, 8)  # 根据实际需要调整图片大小
+    pos=(0, 2)
     )
     
     # 创建标签文本组件
     label_text = visual.TextStim(
         win,
         text='',
-        pos=(0, -1),   
-        height=1.2,    
+        pos=(0, -3),   
+        height=2.5,    
         color='white',
         font='Arial Unicode MS'
     )
@@ -218,9 +215,6 @@ if result == "continue":
     
     # 获取平衡试次
     selected_trials = get_balanced_trials(stim_df)
-    
-    # 设置 block_index =0
-    block_index = 0
     
     #———————————————————————学习阶段——————————————————————#
     # 学习非词
@@ -242,7 +236,7 @@ if result == "continue":
             # 初始化所需记录的数据
             stim_onset = None  
             stim_offset = None  
-            response = None
+            subject_response = None
             rt = None
             first_flip = True  
             rt_clock = core.Clock()  
@@ -271,11 +265,11 @@ if result == "continue":
                 )
                 
                 if keys:
-                    if keys[0][0] == 'space' and response is None:
+                    if keys[0][0] == 'space' and subject_response is None:
                         # 记录反应时和反应
                         # 转换为毫秒
                         rt = keys[0][1] * 1000  
-                        response = 'space'
+                        subject_response = 'space'
                         stim_offset = core.getTime()  
                         break  
 
@@ -292,21 +286,32 @@ if result == "continue":
             core.wait(ITI_duration)
             ITI_offset = core.getTime()
             
+            # 确定正确答案
+            true_response = 'space'   
+            
+            # 判断被试是否正确
+            if subject_response == true_response:
+                correct = 1  # 正确
+            else:
+                correct = 2  # 错误
+            
+            # 将中文标签（我/他）记录为英文标签（self/other）
+            condition = 'self' if trial['label'] == '我' else 'other'
+            
             # 获取帧率
-            frame_rate = win.getActualFrameRate()
-            if frame_rate is None:
-                frame_rate = 60.0
+#            frame_rate = win.getActualFrameRate()
+#            if frame_rate is None:
+#                frame_rate = 60.0
+            frame_rate = 60.0
             
             # 记录数据
-            data_to_write = [
-            fixation_onset, fixation_offset, stim_onset, stim_offset, ITI_onset, ITI_offset,
-            trial['label'], trial['nonword'], rt, response, 'study', None,
-            frame_rate, data.getDateStr(), expInfo['年龄'], expInfo['性别'],
-            expInfo['受试者编号'], block_index, int(expInfo['受试者编号'][-3:]), block
-            ]
+            data_to_write = [expInfo['受试者编号'],expInfo['年龄'],expInfo['性别'],block,'study',
+            fixation_onset,fixation_offset,stim_onset,stim_offset,ITI_onset,ITI_offset,
+            condition,trial['nonword'],subject_response,true_response,correct,rt,win.getActualFrameRate(),data.getDateStr()]
+            
             dataFile.write(','.join(map(str, data_to_write)) + '\n')
             dataFile.flush() 
-        
+
     #———————————————————————学习阶段结束指导语——————————————————————#
     study_end_text = visual.TextStim(win,
         text="学习阶段结束！\n\n"  
@@ -321,14 +326,12 @@ if result == "continue":
         color='white',
         height=0.8,
         wrapWidth=30,          
-        alignHoriz='center',   
-        alignVert='center',    
         units='deg'
         )
         
     study_end_text.draw()
     win.flip()
-    
+
     # 按空格键开始学习阶段的测试
     event.waitKeys(keyList=['space'])
     
@@ -340,18 +343,20 @@ if result == "continue":
     right_option = visual.TextStim(win, text='他', height=1.8, font='Arial Unicode MS', pos=(5, 0), color='white')
     
     # 定义运行函数
-    def run_test_trial(trial):
+    def run_test_trial(trial, flip_side, block):
+        subject_response = None
         stim_onset = None  
         stim_offset = None 
-        response = None 
         rt = None 
+        
+        true_response = 'left' if trial['label'] == '我' else 'right'
         
         # 注视点
         fixation_onset = core.getTime()
         fixation_outer.draw()
         fixation_inner.draw()
         win.flip()
-        core.wait(0.3)
+        core.wait(0.5)
         fixation_offset = core.getTime()
         
         # 呈现非词刺激
@@ -360,9 +365,20 @@ if result == "continue":
         stim_onset = core.getTime() 
         stim_image.draw()
         win.flip()
-        core.wait(2)
+        core.wait(0.9)
+        
+        # 随机调整 self 和 other 的位置
+        flip_side = random.choice([True, False])
+        if flip_side:
+            left_option = visual.TextStim(win, text='他', height=1.8, font='Arial Unicode MS', pos=(-5, 0), color='white')
+            right_option = visual.TextStim(win, text='我', height=1.8, font='Arial Unicode MS', pos=(5, 0), color='white')
+        else:
+            left_option = visual.TextStim(win, text='我', height=1.8, font='Arial Unicode MS', pos=(-5, 0), color='white')
+            right_option = visual.TextStim(win, text='他', height=1.8, font='Arial Unicode MS', pos=(5, 0), color='white')
         
         # 呈现标签提示
+        fixation_outer.draw()
+        fixation_inner.draw()
         left_option.draw()
         right_option.draw()
         win.flip()
@@ -374,59 +390,272 @@ if result == "continue":
             keys = event.getKeys(keyList=['left', 'right'],
                                 timeStamped=rt_clock)
             if keys:
-                response = keys[0][0]
+                subject_response = keys[0][0]
                 rt = keys[0][1] * 1000
                 break
         
         correct = False
-        if response == 'left' and trial['label'] == '我':
-            correct = True
-        elif response == 'right' and trial['label'] == '他':
-            correct = True
-            
-            # 判断正确性并给出反馈
-        if response is None:
+        if trial['label'] == '我':
+            true_response = 'left'
+        elif trial['label'] == '他':
+            true_response = 'right'
+                    
+        # 判断被试是否正确
+        if subject_response == true_response:
+            correct = 1  # 正确
+        else:
+            correct = 2  # 错误
+        
+        # 判断正确性并给出反馈
+        if subject_response is None:
             too_slow_text.draw()
         else:
-            feedback.setText("正确！" if correct else "错误！")
-            feedback.color = 'green' if correct else 'red'
+            if correct == 1:
+                feedback.setText("正确！")
+                feedback.color = 'green' 
+            else:
+                feedback.setText("错误！")
+                feedback.color = 'red' 
             feedback.draw()
         
-        win.flip()
-        core.wait(1)
+            win.flip()
+            core.wait(0.5)
         
-        frame_rate = win.getActualFrameRate() or 60.0
-        data_to_write = [stim_onset, core.getTime(), None, None, None, None,  # 占位时间参数
-        trial['label'], trial['nonword'], rt, response, 'study test', correct,
-        frame_rate, data.getDateStr(), expInfo['年龄'], expInfo['性别'],
-        expInfo['受试者编号'], block_index, int(expInfo['受试者编号'][-3:]), -1  # block标记为测试
-        ]
+        # 试次间隔
+        ITI_onset = core.getTime()
+        win.flip()
+        core.wait(ITI_duration)
+        ITI_offset = core.getTime()
+        
+        condition = 'self' if trial['label'] == '我' else 'other'
+        
+        # 设置了一个默认值，获取帧率的话就会出现那一行文字
+        frame_rate = 60.0
+        
+        data_to_write = [expInfo['受试者编号'],expInfo['年龄'],expInfo['性别'],None,'test',
+            fixation_onset,fixation_offset,stim_onset,stim_offset,ITI_onset,ITI_offset,
+            condition,trial['nonword'],subject_response,true_response,correct,rt,
+            frame_rate,data.getDateStr()]
+            
         dataFile.write(','.join(map(str, data_to_write)) + '\n')
         dataFile.flush()
     
-        return correct
+        return correct, flip_side
         
      # 运行完整测试流程
     def run_test_session():
         """运行完整测试阶段"""
-        test_trials = selected_trials.copy()  # 使用学习阶段的试次
-        remaining_trials = test_trials.sample(frac=1).reset_index(drop=True)  # 打乱顺序
-    
-        while True:
-            errors = []
         
-            # 遍历所有试次
-            for idx, trial in remaining_trials.iterrows():
-                correct = run_test_trial(trial)
-                if not correct:
-                    errors.append(trial.to_dict())  # 收集错误试次
+        nonword_info = selected_trials[['nonword', 'filename', 'label']].drop_duplicates()
+        nonword_map = nonword_info.set_index('nonword').to_dict('index')
+        
+        # 初始化正确次数计数器
+        correct_counts = {nonword: 0 for nonword in nonword_map.keys()}
+        
+        # 持续测试直到所有达到5次正确
+        while any(cnt < 5 for cnt in correct_counts.values()):
+            # 选择需要测试的nonword
+            remaining = [nw for nw, cnt in correct_counts.items() if cnt < 5]
+            chosen_nonword = random.choice(remaining)
+            trial_info = nonword_map[chosen_nonword]
             
-            # 如果没有错误则结束
-            if len(errors) == 0:
-                break
+            # 随机翻转选项位置
+            flip_side = random.choice([True, False])
             
-            # 否则重新测试错误试次
-            remaining_trials = pd.DataFrame(errors).sample(frac=1)
+            # 运行试次并获取正确性
+            correct_value, _ = run_test_trial({  # 接收正确性返回值
+                'filename': trial_info['filename'],
+                'label': trial_info['label'],
+                'nonword': chosen_nonword
+            }, flip_side, block)
+
+            # 仅当回答正确时增加计数
+            if correct_value == 1:
+                correct_counts[chosen_nonword] += 1
             
     run_test_session()   
+    
+    #———————————————————————正式测试阶段指导语——————————————————————#
+    formal_instruction = """接下来进入实验第二阶段的正式测试。\n
+    和学习阶段的测试类似，你仍需判断非词属于Self还是Other。\n
+    按左键 '←' 代表“self”（自己）\n
+    按右键 '→' 代表“other”（他人）\n
+    注意，本阶段需要总正确率达到90%及以上才算通过
+    如果您准备好了，\n
+    <请按空格键继续>"""
+
+    display_instruction(formal_instruction)
+    
+    #———————————————————————正式测试阶段——————————————————————
+    n_formal_blocks = 12
+    trials_per_block = 60
+    required_accuracy = 0.9
+    
+    # 创建反馈组件
+    feedback_text = visual.TextStim(win, text='', color='white', height=1.2, font='Arial Unicode MS')
+    too_slow_text = visual.TextStim(win, text='太慢！', color='red', height=1.2, font='Arial Unicode MS')
+    
+    #———————————————————正式测试试次生成函数——————————————————————#
+    def generate_formal_trials(learned_trials, n_trials):
+        """
+        参数说明：
+        learned_trials: 学习阶段使用的试次数据（DataFrame）
+        n_trials: 需要生成的试次数量
+        """
+        # 从学习阶段数据中提取已学过的非词
+        learned_nonwords = learned_trials[['nonword', 'label', 'filename']].drop_duplicates()
         
+        # 计算每个非词需要重复的次数
+        base_repeats = n_trials // len(learned_nonwords)
+        remaining = n_trials % len(learned_nonwords)
+        
+        # 创建试次列表
+        trials = []
+        for _ in range(base_repeats):
+            trials.extend(learned_nonwords.to_dict('records'))
+        
+        # 补充剩余试次
+        if remaining > 0:
+            trials.extend(learned_nonwords.sample(remaining).to_dict('records'))
+        
+        # 打乱顺序
+        random.shuffle(trials)
+        return trials[:n_trials]
+
+    #———————————————————————正式测试试次运行函数——————————————————————#
+    def run_formal_trial(trial, flip_side, block):
+        # 记录变量初始化
+        subject_response = None
+        rt = None
+        stim_onset = None
+        stim_offset = None 
+        true_response = 'left' if trial['label'] == '我' else 'right'
+        
+        # 注视点
+        fixation_outer.draw()
+        fixation_inner.draw()
+        win.flip()
+        fixation_onset = core.getTime()
+        core.wait(0.5)
+        fixation_offset = core.getTime()
+        
+        # 呈现刺激
+        image_path = os.path.join('stimuli', trial['filename'])
+        stim_image = visual.ImageStim(win, image=image_path, pos=(0, 0))
+        stim_onset = core.getTime()
+        stim_image.draw()
+        win.flip()
+        core.wait(0.9)
+        stim_offset = core.getTime()
+        
+        # 随机调整 self 和 other 的位置
+        left_option = visual.TextStim(win, text='', height=1.8, font='Arial Unicode MS', pos=(-5, 0), color='white')
+        right_option = visual.TextStim(win, text='', height=1.8, font='Arial Unicode MS', pos=(5, 0), color='white')
+        if flip_side:
+            left_option.text = '他'
+            right_option.text = '我'
+        else:
+            left_option.text = '我'
+            right_option.text = '他'
+        
+        # 呈现标签提示
+        fixation_outer.draw()
+        fixation_inner.draw()
+        left_option.draw()
+        right_option.draw()
+        win.flip()
+        
+        # 收集反应
+        rt_clock = core.Clock()
+        while rt_clock.getTime() < 2.0:
+            keys = event.getKeys(keyList=['left', 'right'],
+                                timeStamped=rt_clock)
+            if keys:
+                subject_response = keys[0][0]
+                rt = keys[0][1] * 1000 
+                break
+        # 判断正确性
+        correct = 1 if subject_response == true_response else 2
+        
+        # 显示反馈
+        if subject_response is None:
+            too_slow_text.draw()
+        else:
+            feedback_text.text = "正确！" if correct == 1 else "错误！"
+            feedback_text.color = 'green' if correct == 1 else 'red'
+            feedback_text.draw()
+        win.flip()
+        core.wait(0.5)
+        
+        # 试次间隔
+        ITI_onset = core.getTime()
+        win.flip()
+        core.wait(ITI_duration)
+        ITI_offset = core.getTime()
+            
+        condition = 'self' if trial['label'] == '我' else 'other'
+        
+        # 记录数据
+        data_to_write = [expInfo['受试者编号'],expInfo['年龄'],expInfo['性别'],block,'formal_test',
+                    fixation_onset,fixation_offset,stim_onset,stim_offset,ITI_onset,ITI_offset,
+                    condition,trial['nonword'],subject_response,true_response,correct,
+                    rt,win.getActualFrameRate(),data.getDateStr()]
+            
+        dataFile.write(','.join(map(str, data_to_write)) + '\n')
+        dataFile.flush()
+        
+        return correct == 1
+
+    #———————————————————————运行正式测试阶段——————————————————————#
+    total_correct = 0
+    total_trials = 0
+
+    for block in range(n_formal_blocks):
+        # 生成当前block试次（使用学习阶段的数据）
+        trials = generate_formal_trials(selected_trials, trials_per_block)
+        block_correct = 0
+        
+        # 运行当前block
+        for trial in trials:
+            flip_side = random.choice([True, False])
+            is_correct = run_formal_trial(trial, flip_side, block)
+            total_trials += 1
+            if is_correct:
+                total_correct += 1
+                block_correct += 1
+                
+        # 显示block完成信息
+        block_info = visual.TextStim(win,
+            text=f"Block {block+1}/{n_formal_blocks} 完成\n正确率: {block_correct/trials_per_block:.1%}\n<按空格键继续>",
+            font='Arial Unicode MS',
+            height=0.8,
+            color='white'
+        )
+        block_info.draw()
+        win.flip()
+        event.waitKeys(keyList=['space'])
+
+    # 计算最终正确率
+    final_accuracy = total_correct / total_trials if total_trials > 0 else 0
+
+    #———————————————————————实验结束反馈——————————————————————#
+    if final_accuracy >= required_accuracy:
+        end_text = "恭喜完成实验任务！\n请按空格键退出"
+    else:
+        end_text = "未达到通过标准（正确率需≥90%）\n请按空格键退出\n联系主试重新开始"
+
+    end_msg = visual.TextStim(win,
+        text=end_text,
+        font='Arial Unicode MS',
+        height=0.8,
+        color='white',
+        wrapWidth=30
+    )
+    end_msg.draw()
+    win.flip()
+    event.waitKeys(keyList=['space'])
+
+    #———————————————————————清理资源——————————————————————#
+    dataFile.close()
+    win.close()
+    core.quit()
