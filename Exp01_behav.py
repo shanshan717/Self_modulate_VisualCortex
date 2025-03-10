@@ -46,6 +46,12 @@ dataFile.write('subject_id,age,gender,block,stage,fixation_onset,fixation_offset
                 'stim_onset,stim_offset,ITI_onset,ITI_offset,'
                 'condition,nonword,subject_response,true_response,correct,rt,'
                 'frame_rate,date,\n')
+# 设置默认帧率
+frame_rate = 60.0
+
+# 设置实验组件
+left_option = visual.TextStim(win, text='我', height=1.8, font='Arial Unicode MS', pos=(-5, 0), color='white')
+right_option = visual.TextStim(win, text='他', height=1.8, font='Arial Unicode MS', pos=(5, 0), color='white')
 
 #————————————————实验前：指导语———————————————#
 def display_instruction(text, valid_keys=None):
@@ -221,13 +227,13 @@ if result == "continue":
     for block in range(n_blocks):
         for _, trial in selected_trials.iterrows():
             # 呈现注视点
-            fixation_onset = core.getTime()
             fixation_outer.draw()
             fixation_inner.draw()
             win.flip()
+            fixation_onset = core.getTime()
             core.wait(fix_duration)
             fixation_offset = core.getTime()
-        
+            
             # 呈现刺激
             image_path = os.path.join('stimuli', trial['filename'])
             stim_image.image = image_path
@@ -239,13 +245,11 @@ if result == "continue":
             subject_response = None
             rt = None
             first_flip = True  
-            rt_clock = core.Clock()  
-
-            # 设置最大呈现时长（8秒）
-            max_duration = 8.0  
-            start_time = core.getTime()  # 时长控制起点
-        
-            while (core.getTime() - start_time) < max_duration:
+            
+            # 清除按键反应数据
+            event.clearEvents()
+            
+            while True:
                 # 绘制刺激
                 stim_image.draw()
                 label_text.draw()
@@ -253,7 +257,8 @@ if result == "continue":
                 # 首次刷新记录精确时间
                 if first_flip:
                     flip_time = win.flip()
-                    stim_onset = flip_time  
+                    stim_onset = flip_time 
+                    print(flip_time)
                     first_flip = False
                 else:
                     win.flip()
@@ -261,25 +266,26 @@ if result == "continue":
                 # 检测按键
                 keys = event.getKeys(
                     keyList=['space', 'escape'],
-                    timeStamped=rt_clock  
+                    timeStamped=True
                 )
                 
                 if keys:
-                    if keys[0][0] == 'space' and subject_response is None:
-                        # 记录反应时和反应
-                        # 转换为毫秒
-                        rt = keys[0][1] * 1000  
+                    key_name, _ = keys[0]
+                    key_time = core.getTime()
+                    
+                    if key_name == 'space':
+                        # 计算相对于选项显示开始的时间
+                        rt = (key_time - stim_onset) * 1000 # 转换为毫秒
+                        print(f'rt={key_time - stim_onset}')
                         subject_response = 'space'
                         stim_offset = core.getTime()  
+                        print(f'stim_offset={stim_offset}')
                         break  
-
-            # 处理超时情况
-            if stim_offset is None:
-                stim_offset = core.getTime()
-
-            # 清除屏幕
+                    elif key_name == 'espace':
+                        core.quit()
+            
             win.flip()
-
+            
             # 试次间隔
             ITI_onset = core.getTime()
             win.flip()
@@ -302,12 +308,11 @@ if result == "continue":
 #            frame_rate = win.getActualFrameRate()
 #            if frame_rate is None:
 #                frame_rate = 60.0
-            frame_rate = 60.0
             
             # 记录数据
             data_to_write = [expInfo['受试者编号'],expInfo['年龄'],expInfo['性别'],block,'study',
             fixation_onset,fixation_offset,stim_onset,stim_offset,ITI_onset,ITI_offset,
-            condition,trial['nonword'],subject_response,true_response,correct,rt,win.getActualFrameRate(),data.getDateStr()]
+            condition,trial['nonword'],subject_response,true_response,correct,rt,frame_rate,data.getDateStr()]
             
             dataFile.write(','.join(map(str, data_to_write)) + '\n')
             dataFile.flush() 
@@ -339,8 +344,6 @@ if result == "continue":
     # 创建组件
     feedback = visual.TextStim(win, text='', height=1.2, font='Arial Unicode MS', pos=(0, 0), color='white')
     too_slow_text = visual.TextStim(win, text='太慢！', height=1.2, font='Arial Unicode MS', pos=(0, 0), color='red')
-    left_option = visual.TextStim(win, text='我', height=1.8, font='Arial Unicode MS', pos=(-5, 0), color='white')
-    right_option = visual.TextStim(win, text='他', height=1.8, font='Arial Unicode MS', pos=(5, 0), color='white')
     
     # 定义运行函数
     def run_test_trial(trial, flip_side, block):
@@ -366,7 +369,8 @@ if result == "continue":
         stim_image.draw()
         win.flip()
         core.wait(0.9)
-        
+        stim_offset = core.getTime() 
+
         # 随机调整 self 和 other 的位置
         flip_side = random.choice([True, False])
         if flip_side:
@@ -381,25 +385,47 @@ if result == "continue":
         fixation_inner.draw()
         left_option.draw()
         right_option.draw()
-        win.flip()
-        response_onset = core.getTime()
         
-        # 创建反应clock
-        rt_clock = core.Clock() 
-        while rt_clock.getTime() < 2.0:
-            keys = event.getKeys(keyList=['left', 'right'],
-                                timeStamped=rt_clock)
+        cue_onset = win.flip()
+        print(f'cueonset{cue_onset}')
+        
+        # 设置超时时间
+        timeout = 2.0
+        responded = False
+        
+        # 使用全局时间检测超时
+        while (core.getTime() - cue_onset) < timeout:
+            fixation_outer.draw()
+            fixation_inner.draw()
+            left_option.draw()
+            right_option.draw()
+            
+            win.flip()
+            
+            # 检测按键（使用全局时间戳）
+            keys = event.getKeys(keyList=['left', 'right'],timeStamped=True)
+        
             if keys:
-                subject_response = keys[0][0]
-                rt = keys[0][1] * 1000
-                break
+                key_name, _ = keys[0]
+                key_time = core.getTime()
+                
+                # 计算相对于选项显示开始的时间
+                rt = (key_time - cue_onset) * 1000 # 转换为毫秒
+                print(f"rt={key_time - cue_onset}")
+                
+                subject_response = key_name
+                responded = True
+                break  
+                
+            win.flip()
         
+        # 判断正确性
         correct = False
         if trial['label'] == '我':
             true_response = 'left'
         elif trial['label'] == '他':
             true_response = 'right'
-                    
+
         # 判断被试是否正确
         if subject_response == true_response:
             correct = 1  # 正确
@@ -420,7 +446,7 @@ if result == "continue":
         
             win.flip()
             core.wait(0.5)
-        
+            
         # 试次间隔
         ITI_onset = core.getTime()
         win.flip()
@@ -428,9 +454,6 @@ if result == "continue":
         ITI_offset = core.getTime()
         
         condition = 'self' if trial['label'] == '我' else 'other'
-        
-        # 设置了一个默认值，获取帧率的话就会出现那一行文字
-        frame_rate = 60.0
         
         data_to_write = [expInfo['受试者编号'],expInfo['年龄'],expInfo['性别'],None,'test',
             fixation_onset,fixation_offset,stim_onset,stim_offset,ITI_onset,ITI_offset,
@@ -563,18 +586,36 @@ if result == "continue":
         fixation_inner.draw()
         left_option.draw()
         right_option.draw()
-        win.flip()
+        cue_onset = win.flip()
         
-        # 收集反应
-        rt_clock = core.Clock()
-        while rt_clock.getTime() < 2.0:
-            keys = event.getKeys(keyList=['left', 'right'],
-                                timeStamped=rt_clock)
+        # 超时控制
+        timeout = 2.0
+        responded = False
+        while (core.getTime() - cue_onset) < timeout:
+            
+            fixation_outer.draw()
+            fixation_inner.draw()
+            left_option.draw()
+            right_option.draw()
+            
+            win.flip()
+            
+            keys = event.getKeys(keyList=['left', 'right'],timeStamped=True)
+            
             if keys:
-                subject_response = keys[0][0]
-                rt = keys[0][1] * 1000 
+                key_name, _ = keys[0]
+                key_time = core.getTime()
+                
+                # 计算相对于选项显示开始的时间
+                rt = (key_time - cue_onset) * 1000 # 转换为毫秒
+                print(f"rt={key_time - cue_onset}")
+                
+                subject_response = key_name
+                responded = True
                 break
-        # 判断正确性
+                
+            win.flip()
+        
         correct = 1 if subject_response == true_response else 2
         
         # 显示反馈
@@ -599,7 +640,7 @@ if result == "continue":
         data_to_write = [expInfo['受试者编号'],expInfo['年龄'],expInfo['性别'],block,'formal_test',
                     fixation_onset,fixation_offset,stim_onset,stim_offset,ITI_onset,ITI_offset,
                     condition,trial['nonword'],subject_response,true_response,correct,
-                    rt,win.getActualFrameRate(),data.getDateStr()]
+                    rt,frame_rate,data.getDateStr()]
             
         dataFile.write(','.join(map(str, data_to_write)) + '\n')
         dataFile.flush()
