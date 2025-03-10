@@ -385,39 +385,29 @@ if result == "continue":
         fixation_inner.draw()
         left_option.draw()
         right_option.draw()
-        
-        cue_onset = win.flip()
+        win.flip()
+        # 记录开始按键的时间
+        cue_onset = core.getTime()
         print(f'cueonset{cue_onset}')
         
         # 设置超时时间
         timeout = 2.0
         responded = False
-        
-        # 使用全局时间检测超时
         while (core.getTime() - cue_onset) < timeout:
-            fixation_outer.draw()
-            fixation_inner.draw()
-            left_option.draw()
-            right_option.draw()
+            keys = event.getKeys(keyList=['left', 'right'], timeStamped=True)
             
-            win.flip()
-            
-            # 检测按键（使用全局时间戳）
-            keys = event.getKeys(keyList=['left', 'right'],timeStamped=True)
-        
             if keys:
                 key_name, _ = keys[0]
                 key_time = core.getTime()
                 
-                # 计算相对于选项显示开始的时间
-                rt = (key_time - cue_onset) * 1000 # 转换为毫秒
+                # 计算反应时（转换为ms）
+                rt = (key_time - cue_onset) * 1000 
                 print(f"rt={key_time - cue_onset}")
-                
+            
                 subject_response = key_name
                 responded = True
-                break  
+                break
                 
-            win.flip()
         
         # 判断正确性
         correct = False
