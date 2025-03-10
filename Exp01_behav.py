@@ -5,13 +5,11 @@ import numpy as np
 import pandas as pd
 import os
 from psychopy.monitors import Monitor
-
-import random  # Ensure random module is imported
+import random  
 from psychopy.iohub import launchHubServer
 import matplotlib.pyplot as plt
 
-#————————————————记录被试信息———————————————#
-# Fill the information
+#—————————————————————记录被试信息—————————————————————————#
 expInfo = {'测试时间': data.getDateStr(),
            '受试者编号': '000',
            '年龄': '',
@@ -22,7 +20,7 @@ dlg = gui.DlgFromDict(dictionary=expInfo,
 if dlg.OK == False:
     core.quit()
     
-#————————————————创建实验窗口———————————————#
+#—————————————————————创建实验窗口—————————————————————————#
 win = visual.Window(size=[1920, 1080],
                     allowGUI=True,
                     monitor='testMonitor',
@@ -33,25 +31,24 @@ win = visual.Window(size=[1920, 1080],
 win.setMouseVisible(False)
 monitor = Monitor(name='testMonitor')
 
-# create a default keyboard (e.g. to check for escape)
 defaultKeyboard = keyboard.Keyboard(backend='iohub')
 
-#————————————————创建实验数据文件夹———————————————#
+#——————————————————————创建实验数据文件夹—————————————————————#
 fileName = f"data/Exp1_task1_{expInfo['受试者编号']}" + '.csv'
-# 确保文件夹存在
 os.makedirs(os.path.dirname(fileName), exist_ok=True)  
 dataFile = open(fileName, 'w')
-# 将需要记录的数据写入csv
 dataFile.write('subject_id,age,gender,block,stage,fixation_onset,fixation_offset,'
-                'stim_onset,stim_offset,ITI_onset,ITI_offset,'
+                'stim_onset,stim_offset,ITI_onset,ITI_offset,response,label_onset,'
                 'condition,nonword,subject_response,true_response,correct,rt,'
                 'frame_rate,date,\n')
-# 设置默认帧率
-frame_rate = 60.0
 
+#———————————————————设置实验开始前的默认参数和组件————————————————————#
 # 设置实验组件
 left_option = visual.TextStim(win, text='我', height=1.8, font='Arial Unicode MS', pos=(-5, 0), color='white')
 right_option = visual.TextStim(win, text='他', height=1.8, font='Arial Unicode MS', pos=(5, 0), color='white')
+
+# 设置默认参数
+frame_rate = 60.0
 
 #————————————————实验前：指导语———————————————#
 def display_instruction(text, valid_keys=None):
@@ -67,12 +64,11 @@ def display_instruction(text, valid_keys=None):
     
     if valid_keys is not None:
         keys = event.waitKeys(keyList=valid_keys)
-        if 'right' in keys:  # Proceed to the next step
+        if 'right' in keys:  
             return "continue"
-        elif 'left' in keys:  # Contact the experimenter
+        elif 'left' in keys:  
             return "contact"
     else:
-        # Default behavior, wait for space key
         keys = event.waitKeys(keyList=['space'])
         if 'space' in keys:
             return
@@ -80,9 +76,8 @@ def display_instruction(text, valid_keys=None):
 # Page 1: Introduction Text
 intro_text1 = """欢迎参加本实验！\n
 本实验共分为两个阶段：\n
-第一阶段需要您学习无意义的英文单词（在后续的实验中统称为非词）与标签（Self、Other）的联结，\n
-其中Self指代自己，Other指代他人，\n
-例如"REUJZ = self"，\n
+第一阶段需要您学习无意义的英文单词（在后续的实验中统称为非词）与标签（我、他）的联结，\n
+例如"REUJZ = 我"，\n
 第一阶段无需进行按键反应，\n
 如果您已了解本阶段的实验要求，\n
 <请按空格键继续>"""
@@ -102,7 +97,7 @@ intro_text3 = """在第一阶段,\n
 屏幕中心会出现一个注视点,\n
 您需要将注意力保持在注视点上,\n
 随着注视点消失,\n
-您需要学习记忆非词和标签（Self、Other）的联结,\n
+您需要学习记忆非词和标签（我、他）的联结,\n
 进入实验后，您的鼠标就会隐藏,\n\n
 如果已理解实验要求，请按‘ → ’键继续，
 若仍有疑问，请按‘ ←’ 键联系主试"""
@@ -215,9 +210,10 @@ if result == "continue":
     
     # 设置实验参数
     n_blocks = 5
-    fix_duration = 0.3  # 注视点持续时间
-    stim_duration = 8.0  # 刺激呈现时间
-    ITI_duration = 0.1   # 试次间隔
+    # 注视点持续时间
+    fix_duration = 0.5  
+    # 试次间隔
+    ITI_duration = 0.1   
     
     # 获取平衡试次
     selected_trials = get_balanced_trials(stim_df)
@@ -256,9 +252,8 @@ if result == "continue":
                 
                 # 首次刷新记录精确时间
                 if first_flip:
-                    flip_time = win.flip()
-                    stim_onset = flip_time 
-                    print(flip_time)
+                    stim_onset = win.flip()
+                    print(stim_onset)
                     first_flip = False
                 else:
                     win.flip()
@@ -271,12 +266,13 @@ if result == "continue":
                 
                 if keys:
                     key_name, _ = keys[0]
-                    key_time = core.getTime()
+                    response = core.getTime()
+                    print(f'response={response}')
                     
                     if key_name == 'space':
                         # 计算相对于选项显示开始的时间
-                        rt = (key_time - stim_onset) * 1000 # 转换为毫秒
-                        print(f'rt={key_time - stim_onset}')
+                        rt = (response - stim_onset) * 1000 # 转换为毫秒
+                        print(f'rt={response - stim_onset}')
                         subject_response = 'space'
                         stim_offset = core.getTime()  
                         print(f'stim_offset={stim_offset}')
@@ -304,14 +300,9 @@ if result == "continue":
             # 将中文标签（我/他）记录为英文标签（self/other）
             condition = 'self' if trial['label'] == '我' else 'other'
             
-            # 获取帧率
-#            frame_rate = win.getActualFrameRate()
-#            if frame_rate is None:
-#                frame_rate = 60.0
-            
             # 记录数据
-            data_to_write = [expInfo['受试者编号'],expInfo['年龄'],expInfo['性别'],block,'study',
-            fixation_onset,fixation_offset,stim_onset,stim_offset,ITI_onset,ITI_offset,
+            data_to_write = [expInfo['受试者编号'],expInfo['年龄'],expInfo['性别'],block,'training',
+            fixation_onset,fixation_offset,stim_onset,stim_offset,ITI_onset,ITI_offset,response,None,
             condition,trial['nonword'],subject_response,true_response,correct,rt,frame_rate,data.getDateStr()]
             
             dataFile.write(','.join(map(str, data_to_write)) + '\n')
@@ -351,15 +342,15 @@ if result == "continue":
         stim_onset = None  
         stim_offset = None 
         rt = None 
-        
+        response = None
         true_response = 'left' if trial['label'] == '我' else 'right'
         
         # 注视点
-        fixation_onset = core.getTime()
         fixation_outer.draw()
         fixation_inner.draw()
         win.flip()
-        core.wait(0.5)
+        fixation_onset = core.getTime()
+        core.wait(fix_duration)
         fixation_offset = core.getTime()
         
         # 呈现非词刺激
@@ -387,27 +378,32 @@ if result == "continue":
         right_option.draw()
         win.flip()
         # 记录开始按键的时间
-        cue_onset = core.getTime()
-        print(f'cueonset{cue_onset}')
+        label_onset = core.getTime()
+        print(f'labelonset{label_onset}')
         
         # 设置超时时间
         timeout = 2.0
         responded = False
-        while (core.getTime() - cue_onset) < timeout:
+        while (core.getTime() - label_onset) < timeout:
             keys = event.getKeys(keyList=['left', 'right'], timeStamped=True)
             
             if keys:
                 key_name, _ = keys[0]
-                key_time = core.getTime()
+                response = core.getTime()
+                
+                print(f"response={response}")
                 
                 # 计算反应时（转换为ms）
-                rt = (key_time - cue_onset) * 1000 
-                print(f"rt={key_time - cue_onset}")
+                rt = (response - label_onset) * 1000 
+                print(f"rt={response - label_onset}")
             
                 subject_response = key_name
                 responded = True
                 break
-                
+        
+        if not responded:
+            response = None
+            rt = None
         
         # 判断正确性
         correct = False
@@ -420,11 +416,12 @@ if result == "continue":
         if subject_response == true_response:
             correct = 1  # 正确
         else:
-            correct = 2  # 错误
+            correct = 0  # 错误
         
         # 判断正确性并给出反馈
         if subject_response is None:
             too_slow_text.draw()
+            core.wait(0.5)
         else:
             if correct == 1:
                 feedback.setText("正确！")
@@ -434,8 +431,8 @@ if result == "continue":
                 feedback.color = 'red' 
             feedback.draw()
         
-            win.flip()
-            core.wait(0.5)
+        win.flip()
+        core.wait(0.5)
             
         # 试次间隔
         ITI_onset = core.getTime()
@@ -445,8 +442,8 @@ if result == "continue":
         
         condition = 'self' if trial['label'] == '我' else 'other'
         
-        data_to_write = [expInfo['受试者编号'],expInfo['年龄'],expInfo['性别'],None,'test',
-            fixation_onset,fixation_offset,stim_onset,stim_offset,ITI_onset,ITI_offset,
+        data_to_write = [expInfo['受试者编号'],expInfo['年龄'],expInfo['性别'],None,'testing',
+            fixation_onset,fixation_offset,stim_onset,stim_offset,ITI_onset,ITI_offset,response,label_onset,
             condition,trial['nonword'],subject_response,true_response,correct,rt,
             frame_rate,data.getDateStr()]
             
@@ -542,6 +539,7 @@ if result == "continue":
         rt = None
         stim_onset = None
         stim_offset = None 
+        response = None
         true_response = 'left' if trial['label'] == '我' else 'right'
         
         # 注视点
@@ -549,7 +547,7 @@ if result == "continue":
         fixation_inner.draw()
         win.flip()
         fixation_onset = core.getTime()
-        core.wait(0.5)
+        core.wait(fix_duration)
         fixation_offset = core.getTime()
         
         # 呈现刺激
@@ -576,45 +574,45 @@ if result == "continue":
         fixation_inner.draw()
         left_option.draw()
         right_option.draw()
-        cue_onset = win.flip()
+        win.flip()
+        label_onset = core.getTime()
         
         # 超时控制
         timeout = 2.0
         responded = False
-        while (core.getTime() - cue_onset) < timeout:
-            
-            fixation_outer.draw()
-            fixation_inner.draw()
-            left_option.draw()
-            right_option.draw()
-            
-            win.flip()
-            
-            keys = event.getKeys(keyList=['left', 'right'],timeStamped=True)
+        while (core.getTime() - label_onset) < timeout:
+            keys = event.getKeys(keyList=['left', 'right'], timeStamped=True)
             
             if keys:
                 key_name, _ = keys[0]
-                key_time = core.getTime()
+                response = core.getTime()
                 
-                # 计算相对于选项显示开始的时间
-                rt = (key_time - cue_onset) * 1000 # 转换为毫秒
-                print(f"rt={key_time - cue_onset}")
+                # 计算rt并转换为ms
+                rt = (response - label_onset) * 1000 
+                print(f"rt={response - label_onset}")
                 
                 subject_response = key_name
                 responded = True
                 break
-                
-            win.flip()
         
-        correct = 1 if subject_response == true_response else 2
+        if not responded:
+            response = None
+            rt = None
+            
+        if subject_response == true_response:
+            correct = 1
+        else:
+            correct = 0
         
         # 显示反馈
         if subject_response is None:
             too_slow_text.draw()
+            core.wait(0.5)
         else:
             feedback_text.text = "正确！" if correct == 1 else "错误！"
             feedback_text.color = 'green' if correct == 1 else 'red'
             feedback_text.draw()
+        
         win.flip()
         core.wait(0.5)
         
@@ -628,7 +626,7 @@ if result == "continue":
         
         # 记录数据
         data_to_write = [expInfo['受试者编号'],expInfo['年龄'],expInfo['性别'],block,'formal_test',
-                    fixation_onset,fixation_offset,stim_onset,stim_offset,ITI_onset,ITI_offset,
+                    fixation_onset,fixation_offset,stim_onset,stim_offset,ITI_onset,ITI_offset,response,label_onset,
                     condition,trial['nonword'],subject_response,true_response,correct,
                     rt,frame_rate,data.getDateStr()]
             
