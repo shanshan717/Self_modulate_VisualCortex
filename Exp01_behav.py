@@ -20,6 +20,13 @@ dlg = gui.DlgFromDict(dictionary=expInfo,
 if dlg.OK == False:
     core.quit()
     
+#—————————————根据被试性别匹配不同标签（他/她）—————————————————#
+# 确定代词
+if expInfo['性别'] == 'Female':
+    pronoun = '她'
+else:
+    pronoun = '他'
+
 #—————————————————————创建实验窗口—————————————————————————#
 win = visual.Window(size=[1920, 1080],
                     allowGUI=True,
@@ -45,7 +52,7 @@ dataFile.write('subject_id,age,gender,block,stage,fixation_onset,fixation_offset
 #———————————————————设置实验开始前的默认参数和组件————————————————————#
 # 设置实验组件
 left_option = visual.TextStim(win, text='我', height=1.8, font='Arial Unicode MS', pos=(-5, 0), color='white')
-right_option = visual.TextStim(win, text='他', height=1.8, font='Arial Unicode MS', pos=(5, 0), color='white')
+right_option = visual.TextStim(win, text=pronoun, height=1.8, font='Arial Unicode MS', pos=(5, 0), color='white')
 
 # 设置默认参数
 frame_rate = 60.0
@@ -74,9 +81,9 @@ def display_instruction(text, valid_keys=None):
             return
             
 # Page 1: Introduction Text
-intro_text1 = """欢迎参加本实验！\n
+intro_text1 = f"""欢迎参加本实验！\n
 本实验共分为两个阶段：\n
-第一阶段需要您学习无意义的英文单词（在后续的实验中统称为非词）与标签（我、他）的联结，\n
+第一阶段需要您学习无意义的英文单词（在后续的实验中统称为非词）与标签（我、{pronoun}）的联结，\n
 例如"REUJZ = 我"，\n
 第一阶段无需进行按键反应，\n
 如果您已了解本阶段的实验要求，\n
@@ -93,14 +100,14 @@ intro_text2 = """接下来请将右手食指放在“←”键上,\n
 display_instruction(intro_text2) 
 
 # Page 3: Introduction Text
-intro_text3 = """在第一阶段,\n
+intro_text3 = f"""在第一阶段,\n
 屏幕中心会出现一个注视点,\n
 您需要将注意力保持在注视点上,\n
 随着注视点消失,\n
-您需要学习记忆非词和标签（我、他）的联结,\n
-进入实验后，您的鼠标就会隐藏,\n\n
-如果已理解实验要求，请按‘ → ’键继续，
-若仍有疑问，请按‘ ←’ 键联系主试"""
+您需要学习记忆非词和标签（我、{pronoun}）的联结,\n
+进入实验后，您的鼠标就会隐藏,\n
+如果已理解实验要求，请按“ → ”键继续，\n
+若仍有疑问，请按“ ← ” 键联系主试"""
 
 # Update the function call to listen for both keys
 result = display_instruction(intro_text3, valid_keys=['right', 'left'])
@@ -166,7 +173,7 @@ if result == "continue":
             trials.append({
             'filename': info['filename'], 
             'nonword': info['nonword'],
-            'label': '他'})
+            'label': pronoun})
 
         # 打乱顺序
         random.shuffle(trials)
@@ -195,6 +202,7 @@ if result == "continue":
     stim_image = visual.ImageStim(
     win,
     image=None,
+    size=(66,38),
     pos=(0, 2)
     )
     
@@ -295,7 +303,7 @@ if result == "continue":
             if subject_response == true_response:
                 correct = 1  # 正确
             else:
-                correct = 2  # 错误
+                correct = 0  # 错误
             
             # 将中文标签（我/他）记录为英文标签（self/other）
             condition = 'self' if trial['label'] == '我' else 'other'
@@ -309,14 +317,18 @@ if result == "continue":
             dataFile.flush() 
 
     #———————————————————————学习阶段结束指导语——————————————————————#
+    
+    end_study= f"""学习阶段结束！\n
+    接下来我们将对刚才学习内容进行测试，\n
+    在屏幕中央的注视点消失后，会随机呈现一个非词，\n
+    您需要判断该非词属于“我” 还是 “{pronoun}” ，\n
+    按左键 '←' 代表“我”， \n
+    按右键 '→' 代表“{pronoun}”，\n
+    如果您已经准备好了，\n
+    <请按空格键开始正式测试>"""
+    
     study_end_text = visual.TextStim(win,
-        text="学习阶段结束！\n\n"  
-         "接下来我们将对刚才学习内容进行测试\n"
-         "在屏幕中央的注视点消失后，会随机呈现一个非词，您需要判断该非词属于“self” 还是 “other” \n\n"
-         "按左键 '←' 代表“self”（自己）\n"
-         "按右键 '→' 代表“other”（他人）\n\n"
-         "如果您已经准备好了\n"
-         "<请按空格键开始正式测试>",  
+        text=end_study,  
         font='Arial Unicode MS',
         pos=(0, 0),
         color='white',
@@ -355,7 +367,7 @@ if result == "continue":
         
         # 呈现非词刺激
         image_path = os.path.join('stimuli', trial['filename'])
-        stim_image = visual.ImageStim(win, image=image_path, pos=(0, 0))
+        stim_image = visual.ImageStim(win, image=image_path, size=(66,38), pos=(0, 0))
         stim_onset = core.getTime() 
         stim_image.draw()
         win.flip()
@@ -365,11 +377,11 @@ if result == "continue":
         # 随机调整 self 和 other 的位置
         flip_side = random.choice([True, False])
         if flip_side:
-            left_option = visual.TextStim(win, text='他', height=1.8, font='Arial Unicode MS', pos=(-5, 0), color='white')
+            left_option = visual.TextStim(win, text=pronoun, height=1.8, font='Arial Unicode MS', pos=(-5, 0), color='white')
             right_option = visual.TextStim(win, text='我', height=1.8, font='Arial Unicode MS', pos=(5, 0), color='white')
         else:
             left_option = visual.TextStim(win, text='我', height=1.8, font='Arial Unicode MS', pos=(-5, 0), color='white')
-            right_option = visual.TextStim(win, text='他', height=1.8, font='Arial Unicode MS', pos=(5, 0), color='white')
+            right_option = visual.TextStim(win, text=pronoun, height=1.8, font='Arial Unicode MS', pos=(5, 0), color='white')
         
         # 呈现标签提示
         fixation_outer.draw()
@@ -409,7 +421,7 @@ if result == "continue":
         correct = False
         if trial['label'] == '我':
             true_response = 'left'
-        elif trial['label'] == '他':
+        elif trial['label'] == pronoun:
             true_response = 'right'
 
         # 判断被试是否正确
@@ -486,11 +498,11 @@ if result == "continue":
     run_test_session()   
     
     #———————————————————————正式测试阶段指导语——————————————————————#
-    formal_instruction = """接下来进入实验第二阶段的正式测试。\n
-    和学习阶段的测试类似，你仍需判断非词属于Self还是Other。\n
-    按左键 '←' 代表“self”（自己）\n
-    按右键 '→' 代表“other”（他人）\n
-    注意，本阶段需要总正确率达到90%及以上才算通过
+    formal_instruction = f"""接下来进入实验第二阶段的正式测试，\n
+    和学习阶段的测试类似，你仍需判断非词属于“我”还是“{pronoun}”，\n
+    按左键 “ ← ” 代表“我”，\n
+    按右键 “ → ” 代表“{pronoun}”， \n
+    注意，本阶段的总正确率需达到90%及以上才算通过，\n
     如果您准备好了，\n
     <请按空格键继续>"""
 
@@ -552,7 +564,7 @@ if result == "continue":
         
         # 呈现刺激
         image_path = os.path.join('stimuli', trial['filename'])
-        stim_image = visual.ImageStim(win, image=image_path, pos=(0, 0))
+        stim_image = visual.ImageStim(win, image=image_path, size=(66,38), pos=(0, 0))
         stim_onset = core.getTime()
         stim_image.draw()
         win.flip()
@@ -563,11 +575,11 @@ if result == "continue":
         left_option = visual.TextStim(win, text='', height=1.8, font='Arial Unicode MS', pos=(-5, 0), color='white')
         right_option = visual.TextStim(win, text='', height=1.8, font='Arial Unicode MS', pos=(5, 0), color='white')
         if flip_side:
-            left_option.text = '他'
+            left_option.text = pronoun
             right_option.text = '我'
         else:
             left_option.text = '我'
-            right_option.text = '他'
+            right_option.text = pronoun
         
         # 呈现标签提示
         fixation_outer.draw()
@@ -662,6 +674,7 @@ if result == "continue":
         )
         block_info.draw()
         win.flip()
+        core.wait(0.5)
         event.waitKeys(keyList=['space'])
 
     # 计算最终正确率
