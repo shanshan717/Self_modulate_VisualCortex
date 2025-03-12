@@ -1,5 +1,26 @@
 # Self-modulate-VisualCortex
 
+## Folder structure
+.
+├── Output
+│   ├── 1_Exp_materials
+│   │   ├── 1_Exp_stimuli
+│   │   │   ├── AIUVS.png
+│   │   │   ├── ...
+│   │   │   └── YPNSF.png
+│   │   └── 1_Exp_visual_noise
+│   │       ├── inverted_noise_1.png
+│   │       ├── ...
+│   │       └── noise_5.png
+│   └── 2_Exp_behav_data
+│       └── Exp1_task1_001.csv
+├── README.md
+└── Scripts
+    ├── Exp_behav.py
+    ├── Exp_nonwords.py
+    └── Exp_visual_noise.py
+
+
 <details>
 
 <summary>行为实验程序的todo list</summary>
