@@ -2,6 +2,7 @@
 
 ## Folder structure
 
+```
 .
 ├── Output
 │   ├── 1_Exp_materials
@@ -20,7 +21,7 @@
     ├── Exp_behav.py
     ├── Exp_nonwords.py
     └── Exp_visual_noise.py
-
+```
 
 <details>
 
