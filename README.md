@@ -2,7 +2,7 @@
 
 <details>
 
-<summary>行为实验程序的todo list<summary>
+<summary>行为实验程序的todo list</summary>
 
 ##### 20250312
 - [ ] 噪音背景改为均值128,多尝试一些不同的标准差
