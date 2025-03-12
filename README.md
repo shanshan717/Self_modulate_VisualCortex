@@ -1,6 +1,7 @@
 # Self-modulate-VisualCortex
 
 ## Folder structure
+
 .
 ├── Output
 │   ├── 1_Exp_materials
