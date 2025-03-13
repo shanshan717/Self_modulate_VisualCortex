@@ -1,3 +1,14 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+"""
+Experiment 1 Procedure
+
+Created: Feburary 9, 2025, 11:57
+Author: Shanshan Zhu(zhushanshan0717@gmail.com)
+
+For inquiries, please contact the author.
+"""
+
 # 导入需要的库
 from psychopy import visual, event, core, data, gui
 from psychopy.hardware import keyboard
@@ -28,15 +39,16 @@ else:
     pronoun = '他'
 
 #—————————————————————创建实验窗口—————————————————————————#
+monitor = Monitor(name='testMonitor')
 win = visual.Window(size=[1920, 1080],
                     allowGUI=True,
                     monitor='testMonitor',
                     units='deg',
-                    fullscr=False,
+                    fullscr=True,
                     color='grey')
 
+# 隐藏鼠标光标
 win.setMouseVisible(False)
-monitor = Monitor(name='testMonitor')
 
 defaultKeyboard = keyboard.Keyboard(backend='iohub')
 
@@ -153,7 +165,7 @@ if result == "continue":
         n_files = [info for info in nonword_info if info['third_char'] == 'N']
 
         # 检查数量是否足够
-        if len(u_files) < 2 or len(n_files) < 2:
+        if len(u_files) < 3 or len(n_files) < 3:
             raise ValueError("需要至少6个第三个字母为U和6个为N的非词图片")
 
         # 随机选择并分配
@@ -163,13 +175,13 @@ if result == "continue":
         # 创建试次列表
         trials = []
         # 我-条件 (3U + 3N)
-        for info in u_files[:1] + n_files[:1]:
+        for info in u_files[:3] + n_files[:3]:
             trials.append({
             'filename': info['filename'], 
             'nonword': info['nonword'],
             'label': '我'})
         # 他-条件 (3U + 3N)
-        for info in u_files[1:2] + n_files[1:2]:
+        for info in u_files[3:6] + n_files[3:6]:
             trials.append({
             'filename': info['filename'], 
             'nonword': info['nonword'],
@@ -183,7 +195,7 @@ if result == "continue":
     # 创建注视点
     fixation_outer = visual.Circle(
     win,
-    radius=0.10, 
+    radius=0.4, 
     edges=32,
     lineColor='black',
     fillColor=None,
@@ -192,7 +204,7 @@ if result == "continue":
     
     fixation_inner = visual.Circle(
     win,
-    radius=0.025,  
+    radius=0.15,  
     edges=32,
     fillColor='black',
     lineColor='black'
@@ -202,7 +214,7 @@ if result == "continue":
     stim_image = visual.ImageStim(
     win,
     image=None,
-    size=(66,38),
+    size=(36,20),
     pos=(0, 2)
     )
     
@@ -218,10 +230,9 @@ if result == "continue":
     
     # 设置实验参数
     n_blocks = 5
+    
     # 注视点持续时间
     fix_duration = 0.5  
-    # 试次间隔
-    ITI_duration = 0.1   
     
     # 获取平衡试次
     selected_trials = get_balanced_trials(stim_df)
@@ -231,8 +242,8 @@ if result == "continue":
     for block in range(n_blocks):
         for _, trial in selected_trials.iterrows():
             # 呈现注视点
-            fixation_outer.draw()
-            fixation_inner.draw()
+#            fixation_outer.draw()
+#            fixation_inner.draw()
             win.flip()
             fixation_onset = core.getTime()
             core.wait(fix_duration)
@@ -293,7 +304,7 @@ if result == "continue":
             # 试次间隔
             ITI_onset = core.getTime()
             win.flip()
-            core.wait(ITI_duration)
+            core.wait(np.random.uniform(0.5,1.5))
             ITI_offset = core.getTime()
             
             # 确定正确答案
@@ -367,7 +378,7 @@ if result == "continue":
         
         # 呈现非词刺激
         image_path = os.path.join('stimuli', trial['filename'])
-        stim_image = visual.ImageStim(win, image=image_path, size=(66,38), pos=(0, 0))
+        stim_image = visual.ImageStim(win, image=image_path, size=(36,20), pos=(0, 0))
         stim_onset = core.getTime() 
         stim_image.draw()
         win.flip()
@@ -449,7 +460,7 @@ if result == "continue":
         # 试次间隔
         ITI_onset = core.getTime()
         win.flip()
-        core.wait(ITI_duration)
+        core.wait(np.random.uniform(0.5,1.5))
         ITI_offset = core.getTime()
         
         condition = 'self' if trial['label'] == '我' else 'other'
@@ -474,10 +485,10 @@ if result == "continue":
         # 初始化正确次数计数器
         correct_counts = {nonword: 0 for nonword in nonword_map.keys()}
         
-        # 持续测试直到所有达到5次正确
-        while any(cnt < 5 for cnt in correct_counts.values()):
+        # 持续测试直到所有达到7次正确
+        while any(cnt < 7 for cnt in correct_counts.values()):
             # 选择需要测试的nonword
-            remaining = [nw for nw, cnt in correct_counts.items() if cnt < 5]
+            remaining = [nw for nw, cnt in correct_counts.items() if cnt < 7]
             chosen_nonword = random.choice(remaining)
             trial_info = nonword_map[chosen_nonword]
             
@@ -564,7 +575,7 @@ if result == "continue":
         
         # 呈现刺激
         image_path = os.path.join('stimuli', trial['filename'])
-        stim_image = visual.ImageStim(win, image=image_path, size=(66,38), pos=(0, 0))
+        stim_image = visual.ImageStim(win, image=image_path, size=(36,20), pos=(0, 0))
         stim_onset = core.getTime()
         stim_image.draw()
         win.flip()
@@ -631,7 +642,7 @@ if result == "continue":
         # 试次间隔
         ITI_onset = core.getTime()
         win.flip()
-        core.wait(ITI_duration)
+        core.wait(np.random.uniform(0.5,1.5))
         ITI_offset = core.getTime()
             
         condition = 'self' if trial['label'] == '我' else 'other'
@@ -648,15 +659,17 @@ if result == "continue":
         return correct == 1
 
     #———————————————————————运行正式测试阶段——————————————————————#
+    # 初始化总正确次数和总试次数
     total_correct = 0
     total_trials = 0
-
+    
+    # 遍历当前block中的每个试次
     for block in range(n_formal_blocks):
         # 生成当前block试次（使用学习阶段的数据）
         trials = generate_formal_trials(selected_trials, trials_per_block)
         block_correct = 0
         
-        # 运行当前block
+        # 遍历当前每个block中的每个试次
         for trial in trials:
             flip_side = random.choice([True, False])
             is_correct = run_formal_trial(trial, flip_side, block)
@@ -667,7 +680,7 @@ if result == "continue":
                 
         # 显示block完成信息
         block_info = visual.TextStim(win,
-            text=f"Block {block+1}/{n_formal_blocks} 完成\n正确率: {block_correct/trials_per_block:.1%}\n<按空格键继续>",
+            text=f"block {block+1}/{n_formal_blocks} 完成\n正确率: {block_correct/trials_per_block:.1%}\n<按空格键继续>",
             font='Arial Unicode MS',
             height=0.8,
             color='white'
