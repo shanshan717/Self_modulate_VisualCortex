@@ -1,2 +1,5 @@
 # 忽略操作系统生成的文件
 .DS_Store
+
+# 忽略 Exp_materials 文件夹
+Exp_materials/
