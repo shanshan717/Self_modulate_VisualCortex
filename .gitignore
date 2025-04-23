@@ -3,3 +3,4 @@
 
 # 忽略 Exp_materials 文件夹
 Exp_materials/
+.Rproj.user
