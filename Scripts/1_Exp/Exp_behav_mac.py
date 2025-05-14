@@ -49,7 +49,7 @@ win = visual.Window(size=[1920, 1080],
 # hide mouse cursor
 win.setMouseVisible(False)
 
-defaultKeyboard = keyboard.Keyboard(backend='iohub')
+#defaultKeyboard = keyboard.Keyboard(backend='iohub')
 
 # —————————————————————create folder for experiment data————————————————————
 fileName = f"data/Exp1_task1_{expInfo['受试者编号']}" + '.csv'
@@ -72,38 +72,8 @@ left_option = visual.TextStim(win, text='我', height=2.5, font='Arial Unicode M
 right_option = visual.TextStim(win, text=pronoun, height=2.5, font='Arial Unicode MS', pos=(5, 0), color='white')
 
 # ————————————————experiment start: instructions————————————————————
-def display_instruction(text, valid_keys=None):
-    instruction = visual.TextStim(win, 
-                                text=text, 
-                                font='Arial Unicode MS', 
-                                pos=(0, 0), 
-                                height=0.8, 
-                                color='white', 
-                                wrapWidth=30)
-    instruction.draw()
-    win.flip()
-    
-    if valid_keys is None:
-        keys_to_listen = ['space', 'escape']
-    else:
-        keys_to_listen = valid_keys + ['escape']
-        
-    keys = event.waitKeys(keyList=keys_to_listen)
-    
-    if 'escape' in keys:
-        win.close()
-        core.quit()
-    elif valid_keys is not None:
-        if 'right' in keys:  
-            return "continue"
-        elif 'left' in keys:  
-            return "contact"
-    else:
-        if 'space' in keys:
-            return
-
 # Page 1: Introduction Text
-intro_text1 = f"""欢迎参加本实验！\n
+intro1 = f"""欢迎参加本实验！\n
 本实验共分为三个阶段，\n
 您的主要任务是学习并记住无意义的英文单词（简称非词）,\n
 以及与其对应的标签（我、{pronoun}）之间的联结，\n
@@ -111,10 +81,23 @@ intro_text1 = f"""欢迎参加本实验！\n
 若您已准备好开启本实验，\n
 <请按空格键继续>"""
 
-display_instruction(intro_text1)
+intro1 = visual.TextStim(win, 
+                        text=intro1, 
+                        font='Arial Unicode MS', 
+                        pos=(0, 0), 
+                        height=0.8, 
+                        color='white', 
+                        wrapWidth=30)
+
+intro1.draw()
+win.flip()
+event.waitKeys(keyList=['space'])
+
+if event.getKeys(keyList=["escape"]):
+    core.quit()
 
 # Page 2: Introduction Text
-intro_text2 = f"""第一阶段中，屏幕中央首先会呈现一个注视点，\n
+intro2 = f"""第一阶段中，屏幕中央首先会呈现一个注视点，\n
 您需要将注意力保持在注视点上，\n
 本阶段非词刺激会和其对应的标签（我、{pronoun}）一同出现，\n
 每个非词-标签组合重复显示5遍，\n
@@ -122,10 +105,23 @@ intro_text2 = f"""第一阶段中，屏幕中央首先会呈现一个注视点�
 如“ REUJZ = 我 ”，\n
 <请按空格键继续>"""
 
-display_instruction(intro_text2) 
+intro2 = visual.TextStim(win, 
+                        text=intro2, 
+                        font='Arial Unicode MS', 
+                        pos=(0, 0), 
+                        height=0.8, 
+                        color='white', 
+                        wrapWidth=30)
+
+intro2.draw()
+win.flip()
+event.waitKeys(keyList=['space'])
+
+if event.getKeys(keyList=["escape"]):
+    core.quit()
 
 # Page 3: Introduction Text
-intro_text3 = f"""本阶段没有时间限制，\n
+intro3 = f"""本阶段没有时间限制，\n
 您可以根据自己的节奏进行记忆，\n
 当您认为自己已记住当前非词，\n
 请按“空格键”进入下一个非词的学习，\n
@@ -133,20 +129,47 @@ intro_text3 = f"""本阶段没有时间限制，\n
 请务必认真学习记忆，\n
 <请按空格键继续>"""
 
-display_instruction(intro_text3) 
+intro3 = visual.TextStim(win, 
+                        text=intro3, 
+                        font='Arial Unicode MS', 
+                        pos=(0, 0), 
+                        height=0.8, 
+                        color='white', 
+                        wrapWidth=30)
+
+intro3.draw()
+win.flip()
+event.waitKeys(keyList=['space'])
+
+if event.getKeys(keyList=["escape"]):
+    core.quit()
 
 # Page 4: Introduction Text
-intro_text4 = f"""您将学习12个非词与标签之间的联结，\n
+intro4= f"""您将学习12个非词与标签之间的联结，\n
 一共进行五轮展示，\n
 <请按空格键继续>"""
 
-display_instruction(intro_text4) 
+intro4 = visual.TextStim(win, 
+                        text=intro4, 
+                        font='Arial Unicode MS', 
+                        pos=(0, 0), 
+                        height=0.8, 
+                        color='white', 
+                        wrapWidth=30)
+                        
+intro4.draw()
+win.flip()
+event.waitKeys(keyList=['space'])
+
+if event.getKeys(keyList=["escape"]):
+    core.quit()
+
 
 # ————————————————define stimulus—————————————————————————
 # Get the current file directory
 current_dir = os.path.dirname(os.path.abspath(__file__))
 print(current_dir)
-stim_path = os.path.join(current_dir, "demo_stimuli2.csv")
+stim_path = os.path.join(current_dir, "nonwords.csv")
 
 # Read the stimulus file
 stim_df = pd.read_csv(stim_path)
@@ -343,7 +366,7 @@ for block in range(n_blocks):
         dataFile.flush() 
         
 # present  ending instruction of learning phase
-end_learning_intro = f"""您已完成第一阶段的学习,\n
+intro5 = f"""您已完成第一阶段的学习,\n
 现在，我们将进入第二阶段，\n
 在这个阶段，屏幕中央会呈现一个注视点，\n
 随着注视点消失,\n
@@ -354,29 +377,38 @@ end_learning_intro = f"""您已完成第一阶段的学习,\n
 如果您已理解实验要求，请按“ → ”键继续，\n
 若仍有疑问，请按“ ← ” 键联系主试"""
 
-#event.clearEvents()
+intro5 = visual.TextStim(win, 
+                        text=intro5, 
+                        font='Arial Unicode MS', 
+                        pos=(0, 0), 
+                        height=0.8, 
+                        color='white', 
+                        wrapWidth=30)
 
-display_instruction(end_learning_intro)
-#win.flip()
-
-contact_text = visual.TextStim(win,
-    text="请联系主试！",
-    font='Arial Unicode MS',
-    height=0.8,
-    color='white',
-)
+intro5.draw()
+win.flip()
+    
+contact_text = visual.TextStim(win, 
+                              text="请联系主试", 
+                              font='Arial Unicode MS',
+                              pos=(0, 0), 
+                              height=0.8, 
+                              color='white', 
+                              wrapWidth=30)
 
 while True:
-    key = event.waitKeys(keyList=['left', 'right', 'escape'])[0]
-    if key == 'left':
+    # 等待被试响应
+    keys = event.waitKeys(keyList=['left', 'right', 'escape'])
+    
+    if 'escape' in keys:
+        core.quit()
+    elif 'right' in keys:
+        break  
+    elif 'left' in keys:
         contact_text.draw()
         win.flip()
-    elif key == 'right':
-        break 
-    elif key == 'escape':
-        win.close()
-        core.quit()
-        
+        event.waitKeys() 
+
 #——————————————————————— experiment stage 2: run a test trial ——————————————————————#
 # create components
 feedback = visual.TextStim(win, text='', height=2.5, font='Arial Unicode MS', pos=(0, 0), color='white')
@@ -389,8 +421,11 @@ def run_test_trial(trial, flip_side, block):
     stim_offset = None 
     rt = None 
     response = None
-    true_response = 'left' if trial['label'] == '我' else 'right'
+#    true_response = 'left' if trial['label'] == '我' else 'right'
     
+#    true_response = None
+    position_map = {}
+
     # present fixation point
     fixation_outer.draw()
     fixation_inner.draw()
@@ -415,9 +450,11 @@ def run_test_trial(trial, flip_side, block):
     if flip_side:
         left_option = visual.TextStim(win, text=pronoun, height=2.5, font='Arial Unicode MS', pos=(-5, 0), color='white')
         right_option = visual.TextStim(win, text='我', height=2.5, font='Arial Unicode MS', pos=(5, 0), color='white')
+        position_map = {pronoun: 'left', '我': 'right'}
     else:
         left_option = visual.TextStim(win, text='我', height=2.5, font='Arial Unicode MS', pos=(-5, 0), color='white')
         right_option = visual.TextStim(win, text=pronoun, height=2.5, font='Arial Unicode MS', pos=(5, 0), color='white')
+        position_map = {'我': 'left', pronoun: 'right'}
     
     # present label prompt
     fixation_outer.draw()
@@ -460,29 +497,20 @@ def run_test_trial(trial, flip_side, block):
         rt = None
     
     # check if the participant responded correctly,'1' represent correct,'0' represent false
-    correct = False
-    if trial['label'] == '我':
-        true_response = 'left'
-    elif trial['label'] == pronoun:
-        true_response = 'right'
-    if subject_response == true_response:
-        correct = 1  
-    else:
-        correct = 0  
+    true_response = position_map[trial['label']]
+    
+    # 判断反应是否正确
+    correct = 1 if subject_response == true_response else 0
     
     # provide feedback
     if subject_response is None:
         too_slow_text.draw()
         core.wait(0.5)
     else:
-        if correct == 1:
-            feedback.setText("正确！")
-            feedback.color = 'green' 
-        else:
-            feedback.setText("错误！")
-            feedback.color = 'red' 
+        feedback.setText("正确！" if correct == 1 else "错误！")
+        feedback.color = 'green' if correct == 1 else 'red'
         feedback.draw()
-    
+        
     win.flip()
     core.wait(0.5)
         
@@ -518,7 +546,7 @@ def run_test_session():
     
     # continue testing until all nonwords reach 7 correct responses
     while any(cnt < 7 for cnt in correct_counts.values()):
-        if defaultKeyboard.getKeys(keyList=["escape"]):
+        if event.getKeys(keyList=["escape"]):
             core.quit()
             
         # select a nonword that still needs testing
@@ -557,7 +585,7 @@ display_instruction(formal_instruction)
 
 # ————————————————— experiment stage 3: formal test phase ————————————————
 n_formal_blocks = 12
-trials_per_block = 60
+trials_per_block = 3
 required_accuracy = 0.9
 
 # creat feedback components
